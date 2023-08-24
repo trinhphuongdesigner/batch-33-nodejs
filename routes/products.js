@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const yup = require('yup');
 
 let data = [
   { id: 1, name: 'iPhone 14 Pro Max', price: 1500 },
@@ -9,8 +10,45 @@ let data = [
   { id: 9, name: 'iPhone X', price: 500 },
 ];
 
+const writeFileSync = (path, data) => {
+  fs.writeFileSync(path, JSON.stringify(data), function (err) {
+    if (err) {
+      console.log('««««« err »»»»»', err);
+      throw err
+    };
+    console.log('Saved!');
+  });
+};
+
+const generationID = () => Math.floor(Date.now());
+
+const validateSchema = (schema) => async (req, res, next) => { // thực thi việc xác thực
+  try {
+    await schema.validate({
+      body: req.body,
+      query: req.query,
+      params: req.params,
+    },
+      {
+        abortEarly: false,
+      },
+    );
+
+    return next();
+  } catch (err) {
+    console.log('««««« err »»»»»', err);
+    return res.status(400).json({ type: err.name, errors: err.errors, provider: "YUP" });
+  }
+};
+
+const checkIdSchema = yup.object({
+  params: yup.object({
+    id: yup.number(),
+  }),
+});
+
 // Read list product
-router.get('/list', function(req, res, next) {
+router.get('/list', function (req, res, next) {
   try {
     return res.send(data);
   } catch (error) {
@@ -19,30 +57,72 @@ router.get('/list', function(req, res, next) {
   }
 });
 
-// Read list product
-router.get('/:id', function(req, res, next) {
+// Read detail product
+router.get('/:id', function (req, res, next) {
   const { id } = req.params;
+  console.log('««««« req.params »»»»»', req.params);
 
-  const detail = data.find((item) => item.id.toString() === id);
-  if (!detail) {
-    return res.send(
-      404,
+  // const validationSchema = yup.object().shape({
+  //   id: yup.number().min(0).max(100),
+  // });
+
+  const validationSchema = yup.object({
+    params: yup.object({
+      id: yup.number().min(0).max(100),
+    }),
+    query: yup.object({
+      price: yup.number().min(0),
+    }),
+    body: yup.object({
+      id: yup.number().min(0).max(100),
+      name: yup.string().min(5),
+      price: yup.number(),
+    }),
+  });
+
+  validationSchema
+    .validate(
       {
-        message: "Không tìm thấy",
+        params: req.params,
+        body: req.body,
+        query: req.query,
       },
-    );
-  }
+      {
+        abortEarly: false,
+      },
+    )
+    .then(() => {
+      const detail = data.find((item) => item.id.toString() === id);
 
-  return res.send(
-    202,
-    {
-      message: "Lấy thông tin thành công",
-      payload: detail,
-    },
-  );
+      if (!detail) {
+        return res.send(
+          404,
+          {
+            message: "Không tìm thấy",
+          },
+        );
+      }
+
+      return res.send(
+        202,
+        {
+          message: "Lấy thông tin thành công",
+          payload: detail,
+        },
+      );
+    })
+    .catch((err) => {
+      console.log('««««« err »»»»»', err);
+      return res.send(
+        404,
+        {
+          errors: err.errors,
+        },
+      );
+    });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', function (req, res, next) {
   const { id, name, price } = req.body;
 
   data = [
@@ -59,7 +139,7 @@ router.post('/', function(req, res, next) {
   );
 });
 
-router.put('/:id', function(req, res, next) {
+router.put('/:id', function (req, res, next) {
   const { id } = req.params;
   const { name, price } = req.body;
 
@@ -84,7 +164,7 @@ router.put('/:id', function(req, res, next) {
   );
 });
 
-router.patch('/:id', function(req, res, next) {
+router.patch('/:id', function (req, res, next) {
   const { id } = req.params;
   const { name, price } = req.body;
 
@@ -109,7 +189,7 @@ router.patch('/:id', function(req, res, next) {
   );
 });
 
-router.delete('/:id', function(req, res, next) {
+router.delete('/:id', function (req, res, next) {
   const { id } = req.params;
 
   data = data.filter((item) => item.id !== +id)
