@@ -37,21 +37,30 @@ const validateSchema = (schema) => async (req, res, next) => { // thực thi vi�
     return next();
   } catch (err) {
     console.log('««««« err »»»»»', err);
-    return res.status(400).json({ type: err.name, errors: err.errors, provider: "YUP" });
+    return res.send(400, { type: err.name, errors: err.errors, provider: "YUP", })
+    // return res.status(400).json({ type: err.name, errors: err.errors, provider: "YUP" });
   }
 };
 
 const checkIdSchema = yup.object({
   params: yup.object({
-    id: yup.number().min(0).max(100),
+    id: yup.number().min(0),
   }),
 });
 
-const checkQuerySchema = yup.object({
-  query: yup.object({
-    price: yup.number().min(0),
+const checkCreateSchema = yup.object({
+  body: yup.object({
+    name: yup.string().required(),
+    price: yup.number().min(0).required(),
   }),
 });
+
+const sendErr = () => res.send(
+  400,
+  {
+    message: "Thất bại",
+  },
+);
 
 // Read list product
 router.get('/list', function (req, res, next) {
@@ -153,23 +162,27 @@ const controller = (req, res, next) => {
   );
 };
 
-router.get('/:id', validateSchema(checkIdSchema), validateSchema(checkQuerySchema), controller);
+router.get('/:id', validateSchema(checkIdSchema), controller);
 
-router.post('/', function (req, res, next) {
-  const { id, name, price } = req.body;
+router.post('/', validateSchema(checkCreateSchema), function (req, res, next) {
+  try {
+    const { name, price } = req.body;
 
-  data = [
-    ...data,
-    { id, name, price },
-  ];
+    const newP = { id: generationID(), name, price };
 
-  return res.send(
-    202,
-    {
-      message: "Tạo sản phẩm thành công",
-      payload: { id, name, price },
-    },
-  );
+    data = [...data, newP];
+
+    return res.send(
+      202,
+      {
+        message: "Tạo sản phẩm thành công",
+        payload: newP,
+      },
+    );
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    sendErr();
+  }
 });
 
 router.put('/:id', function (req, res, next) {
