@@ -43,7 +43,13 @@ const validateSchema = (schema) => async (req, res, next) => { // thực thi vi�
 
 const checkIdSchema = yup.object({
   params: yup.object({
-    id: yup.number(),
+    id: yup.number().min(0).max(100),
+  }),
+});
+
+const checkQuerySchema = yup.object({
+  query: yup.object({
+    price: yup.number().min(0),
   }),
 });
 
@@ -57,70 +63,97 @@ router.get('/list', function (req, res, next) {
   }
 });
 
-// Read detail product
-router.get('/:id', function (req, res, next) {
+// OLD VERSION
+// router.get('/:id', function (req, res, next) {
+//   const { id } = req.params;
+//   console.log('««««« req.params »»»»»', req.params);
+
+//   // const validationSchema = yup.object().shape({
+//   //   id: yup.number().min(0).max(100),
+//   // });
+
+//   const validationSchema = yup.object({
+//     params: yup.object({
+//       id: yup.number().min(0).max(100),
+//     }),
+//     query: yup.object({
+//       price: yup.number().min(0),
+//     }),
+//     body: yup.object({
+//       id: yup.number().min(0).max(100),
+//       name: yup.string().min(5),
+//       price: yup.number(),
+//     }),
+//   });
+
+//   validationSchema
+//     .validate(
+//       {
+//         params: req.params,
+//         body: req.body,
+//         query: req.query,
+//       },
+//       {
+//         abortEarly: false,
+//       },
+//     )
+//     .then(() => {
+//       const detail = data.find((item) => item.id.toString() === id);
+
+//       if (!detail) {
+//         return res.send(
+//           404,
+//           {
+//             message: "Không tìm thấy",
+//           },
+//         );
+//       }
+
+//       return res.send(
+//         202,
+//         {
+//           message: "Lấy thông tin thành công",
+//           payload: detail,
+//         },
+//       );
+//     })
+//     .catch((err) => {
+//       console.log('««««« err »»»»»', err);
+//       return res.send(
+//         404,
+//         {
+//           errors: err.errors,
+//         },
+//       );
+//     });
+// });
+
+// NEW VERSION
+
+const controller = (req, res, next) => {
   const { id } = req.params;
-  console.log('««««« req.params »»»»»', req.params);
 
-  // const validationSchema = yup.object().shape({
-  //   id: yup.number().min(0).max(100),
-  // });
+  const detail = data.find((item) => item.id.toString() === id);
 
-  const validationSchema = yup.object({
-    params: yup.object({
-      id: yup.number().min(0).max(100),
-    }),
-    query: yup.object({
-      price: yup.number().min(0),
-    }),
-    body: yup.object({
-      id: yup.number().min(0).max(100),
-      name: yup.string().min(5),
-      price: yup.number(),
-    }),
-  });
-
-  validationSchema
-    .validate(
+  if (!detail) {
+    return res.send(
+      404,
       {
-        params: req.params,
-        body: req.body,
-        query: req.query,
+        message: "Không tìm thấy",
       },
-      {
-        abortEarly: false,
-      },
-    )
-    .then(() => {
-      const detail = data.find((item) => item.id.toString() === id);
+    );
+  }
 
-      if (!detail) {
-        return res.send(
-          404,
-          {
-            message: "Không tìm thấy",
-          },
-        );
-      }
+  return res.send(
+    202,
+    {
+      message: "Lấy thông tin thành công",
+      payload: detail,
+    },
+  );
+};
 
-      return res.send(
-        202,
-        {
-          message: "Lấy thông tin thành công",
-          payload: detail,
-        },
-      );
-    })
-    .catch((err) => {
-      console.log('««««« err »»»»»', err);
-      return res.send(
-        404,
-        {
-          errors: err.errors,
-        },
-      );
-    });
-});
+router.get('/:id', validateSchema(checkIdSchema), validateSchema(checkQuerySchema), controller);
 
 router.post('/', function (req, res, next) {
   const { id, name, price } = req.body;
