@@ -20,7 +20,7 @@ router.get('/:id', function(req, res, next) {
 
   const detail = data.find((item) => item.id.toString() === id);
   if (!detail) {
-    res.send(
+    return res.send(
       404,
       {
         message: "Không tìm thấy",
@@ -28,7 +28,7 @@ router.get('/:id', function(req, res, next) {
     );
   }
 
-  res.send(
+  return res.send(
     202,
     {
       message: "Lấy thông tin thành công",
