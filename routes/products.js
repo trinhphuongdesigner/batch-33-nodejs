@@ -1,54 +1,8 @@
 var express = require('express');
 var router = express.Router();
-const yup = require('yup');
-const fs = require('fs');
 
 let data = require('../data/products.json');
-
-const writeFileSync = (path, data) => {
-  fs.writeFileSync(path, JSON.stringify(data), function (err) {
-    if (err) {
-      console.log('««««« err »»»»»', err);
-      throw err
-    };
-    console.log('Saved!');
-  });
-};
-
-const generationID = () => Math.floor(Date.now());
-
-const validateSchema = (schema) => async (req, res, next) => { // thực thi việc xác thực
-  try {
-    await schema.validate({
-      body: req.body,
-      query: req.query,
-      params: req.params,
-    },
-      {
-        abortEarly: false,
-      },
-    );
-
-    return next();
-  } catch (err) {
-    console.log('««««« err »»»»»', err);
-    return res.send(400, { type: err.name, errors: err.errors, provider: "YUP", })
-    // return res.status(400).json({ type: err.name, errors: err.errors, provider: "YUP" });
-  }
-};
-
-const checkIdSchema = yup.object({
-  params: yup.object({
-    id: yup.number().min(0),
-  }),
-});
-
-const checkCreateSchema = yup.object({
-  body: yup.object({
-    name: yup.string().required(),
-    price: yup.number().min(0).required(),
-  }),
-});
+let { writeFileSync, generationID, validateSchema, checkIdSchema, checkCreateSchema } = require('../utils');
 
 const sendErr = () => res.send(
   400,
