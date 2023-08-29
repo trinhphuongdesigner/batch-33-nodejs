@@ -135,26 +135,31 @@ router.get('/list', function (req, res, next) {
 // NEW VERSION
 
 const controller = (req, res, next) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const detail = data.find((item) => item.id.toString() === id);
+    const detail = data.find((item) => item.id.toString() === id);
 
-  if (!detail) {
+    if (!detail) {
+      return res.send(
+        404,
+        {
+          message: "Không tìm thấy",
+        },
+      );
+    }
+
     return res.send(
-      404,
+      202,
       {
-        message: "Không tìm thấy",
+        message: "Lấy thông tin thành công",
+        payload: detail,
       },
     );
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    return sendErr();
   }
-
-  return res.send(
-    202,
-    {
-      message: "Lấy thông tin thành công",
-      payload: detail,
-    },
-  );
 };
 
 router.get('/:id', validateSchema(checkIdSchema), controller);
@@ -183,58 +188,26 @@ router.post('/', validateSchema(checkCreateSchema), function (req, res, next) {
 });
 
 router.put('/:id', function (req, res, next) {
-  const { id } = req.params;
-  const { name, price } = req.body;
+  try {
+    const { id } = req.params;
+    const { name, price } = req.body;
 
-  const updateData = {
-    id: +id,
-    name,
-    price,
-  };
+    const updateData = {
+      id: +id,
+      name,
+      price,
+    };
 
-  data = data.map((item) => {
-    if (item.id === +id) {
-      return updateData;
-    }
+    data = data.map((item) => {
+      if (item.id === +id) {
+        return updateData;
+      }
 
-    return item;
-  })
+      return item;
+    })
 
-  writeFileSync("data/products.json", data);
+    writeFileSync("data/products.json", data);
 
-  return res.send(
-    202,
-    {
-      message: "Cập nhật sản phẩm thành công",
-      payload: updateData,
-    },
-  );
-});
-
-router.patch('/:id', function (req, res, next) {
-  const { id } = req.params;
-  const { name, price } = req.body;
-  let updateData = {};
-
-  data = data.map((item) => {
-    if (item.id === +id) {
-      updateData = {
-        ...item,
-        name: name || item.name,
-        price: price || item.price,
-      };
-
-      console.log('««««« updateData »»»»»', updateData);
-
-      return updateData;
-    }
-
-    return item;
-  });
-
-  writeFileSync("data/products.json", data);
-
-  if (updateData) {
     return res.send(
       202,
       {
@@ -242,8 +215,51 @@ router.patch('/:id', function (req, res, next) {
         payload: updateData,
       },
     );
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    return sendErr();
   }
-  return sendErr();
+});
+
+router.patch('/:id', function (req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, price } = req.body;
+    let updateData = {};
+
+    data = data.map((item) => {
+      if (item.id === +id) {
+        updateData = {
+          ...item,
+          name: name || item.name,
+          price: price || item.price,
+        };
+
+        console.log('««««« updateData »»»»»', updateData);
+
+        return updateData;
+      }
+
+      return item;
+    });
+
+    writeFileSync("data/products.json", data);
+
+    if (updateData) {
+      return res.send(
+        202,
+        {
+          message: "Cập nhật sản phẩm thành công",
+          payload: updateData,
+        },
+      );
+    }
+
+    return sendErr();
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    return sendErr();
+  }
 });
 
 router.delete('/:id', function (req, res, next) {
