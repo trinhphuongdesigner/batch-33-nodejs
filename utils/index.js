@@ -40,10 +40,10 @@ module.exports = {
     }),
   }),
 
-  checkCreateSchema: yup.object({
-    body: yup.object({
-      name: yup.string().required(),
-      price: yup.number().min(0).required(),
-    }),
-  }),
+  sendErr: (res) => res.send(
+    400,
+    {
+      message: "Thất bại",
+    },
+  ),
 };
