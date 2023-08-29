@@ -1,14 +1,9 @@
 var express = require('express');
 var router = express.Router();
 const yup = require('yup');
+const fs = require('fs');
 
-let data = [
-  { id: 1, name: 'iPhone 14 Pro Max', price: 1500 },
-  { id: 2, name: 'iPhone 13 Pro Max', price: 1200 },
-  { id: 3, name: 'iPhone 12 Pro Max', price: 1000 },
-  { id: 4, name: 'iPhone 11 Pro Max', price: 800 },
-  { id: 9, name: 'iPhone X', price: 500 },
-];
+let data = require('../data/products.json');
 
 const writeFileSync = (path, data) => {
   fs.writeFileSync(path, JSON.stringify(data), function (err) {
@@ -172,6 +167,8 @@ router.post('/', validateSchema(checkCreateSchema), function (req, res, next) {
 
     data = [...data, newP];
 
+    writeFileSync("data/products.json", data);
+
     return res.send(
       202,
       {
@@ -189,23 +186,27 @@ router.put('/:id', function (req, res, next) {
   const { id } = req.params;
   const { name, price } = req.body;
 
+  const updateData = {
+    id: +id,
+    name,
+    price,
+  };
+
   data = data.map((item) => {
     if (item.id === +id) {
-      return {
-        id: item.id,
-        name,
-        price,
-      };
+      return updateData;
     }
 
     return item;
   })
 
+  writeFileSync("data/products.json", data);
+
   return res.send(
     202,
     {
       message: "Cập nhật sản phẩm thành công",
-      payload: data,
+      payload: updateData,
     },
   );
 });
@@ -213,40 +214,56 @@ router.put('/:id', function (req, res, next) {
 router.patch('/:id', function (req, res, next) {
   const { id } = req.params;
   const { name, price } = req.body;
+  let updateData = {};
 
   data = data.map((item) => {
     if (item.id === +id) {
-      return {
+      updateData = {
         ...item,
         name: name || item.name,
         price: price || item.price,
       };
+
+      console.log('««««« updateData »»»»»', updateData);
+
+      return updateData;
     }
 
     return item;
-  })
+  });
 
-  return res.send(
-    202,
-    {
-      message: "Cập nhật sản phẩm thành công",
-      payload: data,
-    },
-  );
+  writeFileSync("data/products.json", data);
+
+  if (updateData) {
+    return res.send(
+      202,
+      {
+        message: "Cập nhật sản phẩm thành công",
+        payload: updateData,
+      },
+    );
+  }
+  return sendErr();
 });
 
 router.delete('/:id', function (req, res, next) {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  data = data.filter((item) => item.id !== +id)
+    data = data.filter((item) => item.id !== +id)
 
-  return res.send(
-    202,
-    {
-      message: "Xóa sản phẩm thành công",
-      payload: data,
-    },
-  );
+    writeFileSync("data/products.json", data);
+
+    return res.send(
+      202,
+      {
+        message: "Xóa sản phẩm thành công",
+      },
+    );
+  } catch (error) {
+    console.log('««««« error »»»»»', error);
+    return sendErr();
+  };
 });
 
 module.exports = router;
