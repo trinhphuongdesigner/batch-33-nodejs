@@ -4,7 +4,13 @@ const { sendErr, generationID, writeFileSync } = require('../../utils');
 module.exports = {
   getAllCategory: (req, res, next) => {
     try {
-      return res.send(data);
+      return res.send(
+        200,
+        {
+          message: "Lấy thông tin thành công",
+          payload: data.filter((item) => !item.isDeleted),
+        },
+      );
     } catch (error) {
       console.log('««««« error »»»»»', error);
       return res.send(400, { message: "Không thành công" });
@@ -22,6 +28,15 @@ module.exports = {
           404,
           {
             message: "Không tìm thấy",
+          },
+        );
+      }
+
+      if (detail.isDeleted) {
+        return res.send(
+          400,
+          {
+            message: "Danh mục đã bị xóa",
           },
         );
       }
@@ -43,7 +58,7 @@ module.exports = {
     try {
       const { name, description } = req.body;
   
-      const newP = { id: generationID(), name, description };
+      const newP = { id: generationID(), name, description, isDeleted: false };
   
       data = [...data, newP];
   
@@ -140,8 +155,17 @@ module.exports = {
   deleteCategory: (req, res, next) => {
     try {
       const { id } = req.params;
+
+      data = data.map((item) => {
+        if (item.id === +id) {
+          return {
+            ...item,
+            isDeleted: true,
+          };
+        };
   
-      data = data.filter((item) => item.id !== +id)
+        return item;
+      });
   
       writeFileSync("data/categories.json", data);
   

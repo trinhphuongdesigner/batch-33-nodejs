@@ -3,7 +3,7 @@ var router = express.Router();
 
 let { validateSchema, checkIdSchema } = require('../../utils');
 const { getAllCategory, getDetailCategory, createCategory, putCategory, patchCategory, deleteCategory } = require('./controller');
-const { checkCreateCategorySchema } = require('./validation');
+const { checkCreateCategorySchema, checkPutCategorySchema, checkPatchCategorySchema } = require('./validation');
 
 // router.get('/', getAllCategory);
 // router.post('/', validateSchema(checkCreateSchema), createCategory);
@@ -18,8 +18,8 @@ router.route('/')
 
 router.route("/:id")
   .get(validateSchema(checkIdSchema), getDetailCategory)
-  .put(validateSchema(checkIdSchema), putCategory)
-  .patch(validateSchema(checkIdSchema), patchCategory)
+  .put(validateSchema(checkIdSchema), validateSchema(checkPutCategorySchema), putCategory)
+  .patch(validateSchema(checkIdSchema), validateSchema(checkPatchCategorySchema), patchCategory)
   .delete(validateSchema(checkIdSchema), deleteCategory)
 
 module.exports = router;
