@@ -29,6 +29,10 @@ module.exports = {
       const { id } = req.params;
   
       const result = await Category.findById(id);
+      // const result = await Category.findOne({
+      //   _id : id,
+      //   isDeleted: false,
+      // });
   
       if (!result) {
         return res.send(
@@ -39,14 +43,14 @@ module.exports = {
         );
       }
 
-      if (result.isDeleted) {
-        return res.send(
-          400,
-          {
-            message: "Danh mục đã bị xóa",
-          },
-        );
-      }
+      // if (result.isDeleted) {
+      //   return res.send(
+      //     400,
+      //     {
+      //       message: "Danh mục đã bị xóa",
+      //     },
+      //   );
+      // }
   
       return res.send(
         202,
