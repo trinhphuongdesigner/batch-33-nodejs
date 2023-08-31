@@ -43,14 +43,14 @@ module.exports = {
         );
       }
 
-      // if (result.isDeleted) {
-      //   return res.send(
-      //     400,
-      //     {
-      //       message: "Danh mục đã bị xóa",
-      //     },
-      //   );
-      // }
+      if (result.isDeleted) {
+        return res.send(
+          400,
+          {
+            message: "Danh mục đã bị xóa",
+          },
+        );
+      }
   
       return res.send(
         202,
@@ -88,41 +88,58 @@ module.exports = {
     }
   },
 
-  putCategory: (req, res, next) => {
+  putCategory: async (req, res, next) => {
     try {
       const { id } = req.params;
       const { name, description } = req.body;
-  
-      const updateData = {
-        id: +id,
-        name,
-        description,
-      };
-  
-      data = data.map((item) => {
-        if (item.id === +id) {
-          return updateData;
-        }
-  
-        return item;
-      })
-  
-      writeFileSync("data/categories.json", data);
-  
+
+      // const result = await Category.findByIdAndUpdate(id, {name, description}, { new: true })
+      // const result = await Category.findOneAndUpdate(
+      //   {
+      //     // _id : mongoose.Types.ObjectId(id)
+      //     _id : id,
+      //     isDeleted: false,
+      //   },
+      //   {name, description},
+      //   { new: true },
+      // );
+      const result1 = await Category.findById(id);
+
+      if (!result1) {
+        return res.send(
+          404,
+          {
+            message: "Không tìm thấy",
+          },
+        );
+      }
+
+      if (result1.isDeleted) {
+        return res.send(
+          404,
+          {
+            message: "Đã bị xóa",
+          },
+        );
+      }
+
+      const result2 = await Category.findByIdAndUpdate(id, { name, description }, { new: true })
+
       return res.send(
         202,
         {
-          message: "Cập nhật sản phẩm thành công",
-          payload: updateData,
+          message: "Cập nhật danh mục thành công",
+          payload: result2,
         },
       );
+
     } catch (error) {
       console.log('««««« error »»»»»', error);
       return sendErr(res);
     }
   },
 
-  patchCategory: (req, res, next) => {
+  patchCategory: async (req, res, next) => {
     try {
       const { id } = req.params;
       const { name, description } = req.body;
@@ -163,7 +180,7 @@ module.exports = {
     }
   },
 
-  deleteCategory: (req, res, next) => {
+  deleteCategory: async (req, res, next) => {
     try {
       const { id } = req.params;
 

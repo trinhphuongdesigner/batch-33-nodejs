@@ -11,7 +11,6 @@ module.exports = {
   checkPutCategorySchema: yup.object({
     body: yup.object({
       name: yup.string().max(50).required(),
-      isDeleted: yup.boolean().required(),
       description: yup.string().max(500),
     }),
   }),
