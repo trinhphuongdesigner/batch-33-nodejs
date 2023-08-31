@@ -40,10 +40,11 @@ module.exports = {
     }),
   }),
 
-  sendErr: (res) => res.send(
+  sendErr: (res, errors) => res.send(
     400,
     {
       message: "Thất bại",
+      errors,
     },
   ),
 };

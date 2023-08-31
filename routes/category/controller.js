@@ -7,13 +7,15 @@ const Category = require('../../models/category');
 mongoose.connect('mongodb://127.0.0.1:27017/node-33-database');
 
 module.exports = {
-  getAllCategory: (req, res, next) => {
+  getAllCategory: async (req, res, next) => {
     try {
+      const result = await Category.find({ isDeleted: false });
+
       return res.send(
         200,
         {
           message: "Lấy thông tin thành công",
-          payload: data.filter((item) => !item.isDeleted),
+          payload: result,
         },
       );
     } catch (error) {
@@ -26,9 +28,9 @@ module.exports = {
     try {
       const { id } = req.params;
   
-      const detail = data.find((item) => item.id.toString() === id);
+      const result = data.find((item) => item.id.toString() === id);
   
-      if (!detail) {
+      if (!result) {
         return res.send(
           404,
           {
@@ -37,7 +39,7 @@ module.exports = {
         );
       }
 
-      if (detail.isDeleted) {
+      if (result.isDeleted) {
         return res.send(
           400,
           {
@@ -59,26 +61,26 @@ module.exports = {
     }
   },
 
-  createCategory: (req, res, next) => {
+  createCategory: async (req, res, next) => {
     try {
       const { name, description } = req.body;
   
-      const newP = { id: generationID(), name, description, isDeleted: false };
-  
-      data = [...data, newP];
-  
-      writeFileSync("data/categories.json", data);
+      const newCategory = new Category({
+        name,
+        description,
+      });
+
+      const result = await newCategory.save();
   
       return res.send(
         202,
         {
           message: "Tạo sản phẩm thành công",
-          payload: newP,
+          payload: result,
         },
       );
     } catch (error) {
-      console.log('««««« error »»»»»', error);
-      sendErr(res);
+      sendErr(res, error.errors);
     }
   },
 
