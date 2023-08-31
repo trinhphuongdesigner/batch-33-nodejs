@@ -1,10 +1,5 @@
-const { default: mongoose } = require('mongoose');
-
 let data = require('../../data/categories.json');
 const { sendErr, generationID, writeFileSync } = require('../../utils');
-const Category = require('../../models/category');
-
-mongoose.connect('mongodb://127.0.0.1:27017/node-33-database');
 
 module.exports = {
   getAllCategory: (req, res, next) => {
