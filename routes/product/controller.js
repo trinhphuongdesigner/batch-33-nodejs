@@ -1,159 +1,262 @@
-let data = require('../../data/products.json');
-const { sendErr, generationID, writeFileSync } = require('../../utils');
+const { Product, Category, Supplier } = require('../../models');
+const { fuzzySearch, toObjectId } = require('../../utils');
 
 module.exports = {
-  getAllProduct: (req, res, next) => {
+  getAll: async (req, res, next) => { // NOTE
     try {
-      return res.send(data);
-    } catch (error) {
-      console.log('««««« error »»»»»', error);
-      return res.send(400, { message: "Không thành công" });
-    }
-  },
-
-  getDetailProduct: (req, res, next) => {
-    try {
-      const { id } = req.params;
-  
-      const detail = data.find((item) => item.id.toString() === id);
-  
-      if (!detail) {
-        return res.send(
-          404,
-          {
-            message: "Không tìm thấy",
-          },
-        );
-      }
-  
-      return res.send(
-        202,
-        {
-          message: "Lấy thông tin thành công",
-          payload: detail,
-        },
-      );
-    } catch (error) {
-      console.log('««««« error »»»»»', error);
-      return sendErr(res);
-    }
-  },
-
-  createProduct: (req, res, next) => {
-    try {
-      const { name, price } = req.body;
-  
-      const newP = { id: generationID(), name, price };
-  
-      data = [...data, newP];
-  
-      writeFileSync("data/products.json", data);
-  
-      return res.send(
-        202,
-        {
-          message: "Tạo sản phẩm thành công",
-          payload: newP,
-        },
-      );
-    } catch (error) {
-      console.log('««««« error »»»»»', error);
-      sendErr(res);
-    }
-  },
-
-  putProduct: (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { name, price } = req.body;
-  
-      const updateData = {
-        id: +id,
-        name,
-        price,
-      };
-  
-      data = data.map((item) => {
-        if (item.id === +id) {
-          return updateData;
-        }
-  
-        return item;
+      let results = await Product.find({
+        isDeleted: false,
       })
-  
-      writeFileSync("data/products.json", data);
-  
-      return res.send(
-        202,
-        {
-          message: "Cập nhật sản phẩm thành công",
-          payload: updateData,
-        },
-      );
-    } catch (error) {
-      console.log('««««« error »»»»»', error);
-      return sendErr(res);
-    }
-  },
+        .populate('category')
+        .populate('supplier')
+        .lean();
 
-  patchProduct: (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { name, price } = req.body;
-      let updateData = {};
-  
-      data = data.map((item) => {
-        if (item.id === +id) {
-          updateData = {
-            ...item,
-            name: name || item.name,
-            price: price || item.price,
-          };
-  
-          console.log('««««« updateData »»»»»', updateData);
-  
-          return updateData;
-        }
-  
-        return item;
+      return res.send({ code: 200, payload: results });
+    } catch (err) {
+      return res.send(404, {
+        message: "Không tìm thấy",
+        err,
       });
-  
-      writeFileSync("data/products.json", data);
-  
-      if (updateData) {
-        return res.send(
-          202,
-          {
-            message: "Cập nhật sản phẩm thành công",
-            payload: updateData,
-          },
-        );
-      }
-  
-      return sendErr(res);
-    } catch (error) {
-      console.log('««««« error »»»»»', error);
-      return sendErr(res);
     }
   },
 
-  deleteProduct: (req, res, next) => {
+  getList: async (req, res, next) => { // NOTE
+    try {
+      const { page, pageSize } = req.query; // 10 - 1
+      const limit = pageSize || 12; // 10
+      const skip = limit * (page - 1) || 0;
+
+      const conditionFind = { isDeleted: false };
+
+      let results = await Product.find(conditionFind)
+        .populate('category')
+        .populate('supplier')
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      const total = await Product.countDocuments(conditionFind)
+
+      return res.send({ code: 200, payload: results, total });
+    } catch (err) {
+      return res.send(404, {
+        message: "Không tìm thấy",
+        err,
+      });
+    }
+  },
+
+  search: async (req, res, next) => {
+    try {
+      const { keyword, categoryId, priceStart, priceEnd, supplierId, page, pageSize, stockStart, stockEnd, discountStart, discountEnd } = req.query;
+      const limit = pageSize || 12; // 10
+      const skip = limit * (page - 1) || 0;
+
+      const conditionFind = { isDeleted: false };
+
+      if (keyword) conditionFind.name = fuzzySearch(keyword);
+
+      if (categoryId) {
+        conditionFind.categoryId = categoryId;
+        // conditionFind.$expr = { $eq: ['$categoryId', categoryId] };
+      };
+
+      if (supplierId) {
+        conditionFind.supplierId = supplierId;
+      };
+
+      if (priceStart && priceEnd) { // 20 - 50
+        const compareStart = { $lte: ['$price', priceEnd] }; // '$field'
+        const compareEnd = { $gte: ['$price', priceStart] };
+        conditionFind.$expr = { $and: [compareStart, compareEnd] };
+      } else if (priceStart) {
+        conditionFind.price = { $gte: parseFloat(priceStart) };
+      } else if (priceEnd) {
+        conditionFind.price = { $lte: parseFloat(priceEnd) };
+      }
+
+      const result = await Product.find(conditionFind)
+        .populate('category')
+        .populate('supplier')
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Product.countDocuments(conditionFind)
+
+      res.send(200, {
+        message: "Thành công",
+        payload: result,
+        total,
+      });
+    } catch (error) {
+      return res.send(404, {
+        message: "Không tìm thấy",
+      })
+    }
+  },
+
+  getDetail: async (req, res, next) => {
     try {
       const { id } = req.params;
-  
-      data = data.filter((item) => item.id !== +id)
-  
-      writeFileSync("data/products.json", data);
-  
-      return res.send(
-        202,
-        {
-          message: "Xóa sản phẩm thành công",
-        },
-      );
+
+      let result = await Product.findOne({
+        _id: id,
+        isDeleted: false,
+      })
+        .populate('category')
+        .populate('supplier');
+
+      if (result) {
+        return res.send({ code: 200, payload: result });
+      }
+
+      return res.status(404).send({ code: 404, message: 'Không tìm thấy' });
+    } catch (err) {
+      res.status(404).json({
+        message: 'Get detail fail!!',
+        payload: err,
+      });
+    }
+  },
+
+  create: async (req, res, next) => {
+    try {
+      const { name, price, discount, stock, description, supplierId, categoryId } = req.body;
+
+      // const existSupplier = await Supplier.find({ // 10s
+      //   _id: supplierId,
+      //   isDeleted: false,
+      // });
+      // const existCategory = await Category.find({ // 20s
+      //   _id: categoryId,
+      //   isDeleted: false,
+      // });
+      const getSupplier = Supplier.findOne({
+        _id: supplierId,
+        // isDeleted: false,
+      });
+      const getCategory =  Category.findOne({
+        _id: categoryId,
+        // isDeleted: false,
+      });
+
+      const [existSupplier, existCategory] = await Promise.all([getSupplier, getCategory]);
+
+      const error = [];
+      if (!existSupplier) error.push("Nhà cung cấp không khả dụng");
+      if (existSupplier.isDeleted) error.push("Nhà cung cấp đã bị xóa");
+      if (!existCategory) error.push("Danh mục không khả dụng");
+      if (existCategory.isDeleted) error.push("Danh mục đã bị xóa");
+
+      if (error.length > 0 ) {
+        return res.send(400, {
+          error,
+          message: "Không khả dụng"
+        });
+      }
+
+      const newRecord = new Product({
+        name, price, discount, stock, description, supplierId, categoryId,
+      });
+
+      let result = await newRecord.save();
+
+      return res.send(200, {
+        message: "Thành công",
+        payload: result,
+      });
     } catch (error) {
       console.log('««««« error »»»»»', error);
-      return sendErr(res);
-    };
+      return res.send(404, {
+        message: "Có lỗi",
+        error,
+      });
+    }
   },
-}
+
+  update: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { name, price, discount, stock, description, supplierId, categoryId } = req.body;
+
+      // Check if the product exists and is not deleted
+      const product = await Product.findOne({ _id: id, isDeleted: false });
+
+      if (!product) {
+        return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+      }x``
+      const error = [];
+
+      // Check if the supplier exists and is not deleted
+      if (product.supplierId.toString() !== supplierId.toString()) {
+        const supplier = await Supplier.findOne({ _id: supplierId, isDeleted: false });
+
+        if (!supplier) error.push("Nhà cung cấp không khả dụng");
+      }
+
+      // Check if the category exists and is not deleted
+      if (product.categoryId.toString() !== categoryId) {
+        const category = await Category.findOne({ _id: categoryId, isDeleted: false });
+
+      if (!category)  error.push("Danh mục không khả dụng");
+      };
+
+      if (error.length > 0 ) {
+        return res.send(400, {
+          error,
+          message: "Không khả dụng"
+        });
+      }
+
+      // Update the product
+      const updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        { name, price, discount, stock, description, supplierId, categoryId },
+        { new: true }
+      );
+
+      if (updatedProduct) {
+        return res.status(200).json({
+          message: "Update successful",
+          payload: updatedProduct,
+        });
+      }
+
+      return res.status(400).json({ message: "Update failed" });
+    } catch (error) {
+      console.log('««««« error »»»»»', error);
+      return res.send(404, {
+        message: "Có lỗi",
+        error,
+      });
+    }
+  },
+
+  softDelete: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+
+      const result = await Product.findByIdAndUpdate(
+        id,
+        { isDeleted: true },
+        { new: true },
+      );
+
+      if (result) {
+        return res.send(200, {
+          message: "Xóa thành công",
+          payload: result,
+        });
+      }
+
+      return res.send(400, {
+        message: "Thất bại",
+      });
+    } catch (error) {
+      return res.send(404, {
+        message: "Không tìm thấy",
+        error,
+      });
+    }
+  },
+};
