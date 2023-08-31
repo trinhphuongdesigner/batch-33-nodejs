@@ -24,11 +24,11 @@ module.exports = {
     }
   },
 
-  getDetailCategory: (req, res, next) => {
+  getDetailCategory: async (req, res, next) => {
     try {
       const { id } = req.params;
   
-      const result = data.find((item) => item.id.toString() === id);
+      const result = await Category.findById(id);
   
       if (!result) {
         return res.send(
@@ -52,7 +52,7 @@ module.exports = {
         202,
         {
           message: "Lấy thông tin thành công",
-          payload: detail,
+          payload: result,
         },
       );
     } catch (error) {
