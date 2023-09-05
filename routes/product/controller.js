@@ -23,7 +23,7 @@ module.exports = {
   getList: async (req, res, next) => { // NOTE
     try {
       const { page, pageSize } = req.query; // 10 - 1
-      const limit = pageSize || 12; // 10
+      const limit = pageSize || 10; // 10
       const skip = limit * (page - 1) || 0;
 
       const conditionFind = { isDeleted: false };
@@ -33,11 +33,12 @@ module.exports = {
         .populate('supplier')
         .skip(skip)
         .limit(limit)
+        .sort({ "name": 1, "price": 1 , "discount": -1})
         .lean();
 
       const total = await Product.countDocuments(conditionFind)
 
-      return res.send({ code: 200, payload: results, total });
+      return res.send({ code: 200, total, count: results.length, payload: results });
     } catch (err) {
       return res.send(404, {
         message: "Không tìm thấy",
@@ -174,6 +175,39 @@ module.exports = {
     }
   },
 
+  fake: async (req, res, next) => {
+    try {
+      const { products } = req.body;
+
+      const getSupplier = Supplier.findOne({
+        isDeleted: false,
+      });
+      const getCategory =  Category.findOne({
+        isDeleted: false,
+      });
+
+      const [existSupplier, existCategory] = await Promise.all([getSupplier, getCategory]);
+
+      const data = products.map((item) => ({
+        ...item,
+        supplierId: existSupplier._id,
+        categoryId: existCategory._id,
+      }))
+      let result = await Product.insertMany(data);
+
+      return res.send(200, {
+        message: "Thành công",
+        payload: result,
+      });
+    } catch (error) {
+      console.log('««««« error »»»»»', error);
+      return res.send(404, {
+        message: "Có lỗi",
+        error,
+      });
+    }
+  },
+
   update: async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -184,7 +218,7 @@ module.exports = {
 
       if (!product) {
         return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-      }x``
+      }
       const error = [];
 
       // Check if the supplier exists and is not deleted
