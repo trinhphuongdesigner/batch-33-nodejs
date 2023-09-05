@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const { default: mongoose } = require('mongoose');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -24,6 +25,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+mongoose.connect('mongodb+srv://trinhphuongdev:xjJx9zdpdfLS2JCI@cluster0.xrdmevl.mongodb.net/node-33-database');
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
