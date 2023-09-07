@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const { default: mongoose } = require('mongoose');
+require('dotenv').config();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -13,6 +14,8 @@ var suppliersRouter = require('./routes/supplier/router');
 const customersRouter = require('./routes/customer/router');
 const employeesRouter = require('./routes/employee/router');
 const ordersRouter = require('./routes/order/router');
+
+const { CONNECTION_STRING, DB_NAME } = require('./constants/db');
 
 var app = express();
 
@@ -26,7 +29,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-mongoose.connect('mongodb+srv://trinhphuongdev:xjJx9zdpdfLS2JCI@cluster0.xrdmevl.mongodb.net/node-33-database');
+mongoose.connect(`${CONNECTION_STRING}${DB_NAME}`);
+// mongoose.connect('node-33-database');
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
