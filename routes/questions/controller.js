@@ -12,7 +12,7 @@ module.exports = {
   question1: async (req, res, next) => {
     try {
       const conditionFind = {
-        discount: { $gte: 10 },
+        discount: { $gt: 10 },
       };
 
       console.log('««««« conditionFind »»»»»', conditionFind);
@@ -36,7 +36,7 @@ module.exports = {
       const { discount } = req.query;
       const conditionFind = {};
 
-      if (discount) conditionFind.discount = { $gte: discount };
+      if (discount) conditionFind.discount = { $lte: discount };
 
       let results = await Product.find(conditionFind).populate("category").populate("supplier");
       let total = await Product.countDocuments();
@@ -59,9 +59,10 @@ module.exports = {
 
       if (discount) {
         switch (+type) {
-          case 0:
-            conditionFind.discount = { $eq: discount };
-            break;
+        // switch (Number(type)) {
+          // case 0:
+          //   conditionFind.discount = { $eq: discount };
+          //   break;
 
           case 1:
             conditionFind.discount = { $lt: discount };
