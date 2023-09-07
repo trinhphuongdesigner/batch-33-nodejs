@@ -198,8 +198,12 @@ module.exports = {
       const m = { $multiply: ['$price', s] }; // price * 90
 
       const d = { $divide: [m, 100] }; // price * 90 / 100
+      // d = discountedPrice;
 
-      const conditionFind = { $expr: { $lte: [d, 1000] } };
+      // const conditionFind = { d: { $lte: d } }; // SAI
+
+      const conditionFind = { $expr: { $lte: [d, 100] } };
+
       // const conditionFind = { $expr: { $lte: [{ $divide: [{ $multiply: ['$price', { $subtract: [100, '$discount'] }] }, 100] }, 1000] } };
       // const conditionFind = { discount : { $lte: 1000 }}; SAI
 
@@ -207,7 +211,7 @@ module.exports = {
         .populate("category")
         .populate("supplier")
         // .select('-categoryId -supplierId -description')
-        .lean(); // convert data to object
+        // .lean(); // convert data to object
 
       // const newResults = results.map((item) => {
       //   const dis = item.price * (100 - item.discount) / 100;
@@ -240,11 +244,13 @@ module.exports = {
 
       const d = { $divide: [m, 100] }; // price * 90 / 100
 
-      const { price } = req.query;
+      const { discountedPrice } = req.query;
 
-      const conditionFind = { $expr: { $lte: [d, parseFloat(price)] } };
+      let conditionFind = {};
 
-      console.log('««««« conditionFind »»»»»', conditionFind);
+      if (discountedPrice) {
+        conditionFind = { $expr: { $lte: [d, parseFloat(discountedPrice)] } };
+      }
 
       let results = await Product.find(conditionFind).lean(); // convert data to object
 
@@ -274,7 +280,7 @@ module.exports = {
       // ]);
 
       let results = await Product.aggregate()
-        .match({ $expr: { $lte: [d, 20000] } });
+        .match({ $expr: { $lte: [d, 100] } });
 
       let total = await Product.countDocuments();
 
@@ -311,7 +317,7 @@ module.exports = {
 
       let results = await Product.aggregate()
         .addFields({ disPrice: d })
-        .match({ $expr: { $lte: ['$disPrice', 10000] } })
+        .match({ $expr: { $lte: ['$disPrice', 100] } })
         .project({
           categoryId: 0,
           supplierId: 0,
@@ -320,6 +326,18 @@ module.exports = {
           price: 0,
           discount: 0,
         });
+
+      // let results = await Product.aggregate()
+      // .match({ $expr: { $lte: [d, 100] } })
+      // // .addFields({ disPrice: d })
+      //   .project({
+      //     categoryId: 0,
+      //     supplierId: 0,
+      //     description: 0,
+      //     isDeleted: 0,
+      //     price: 0,
+      //     discount: 0,
+      //   });
 
       let total = await Product.countDocuments();
 
@@ -357,7 +375,7 @@ module.exports = {
 
       let results = await Product.aggregate()
         .addFields({ disPrice: d })
-        .match({ $expr: { $lte: ['$disPrice', 1000] } })
+        .match({ $expr: { $lte: ['$disPrice', 100] } })
         .lookup({
           from: 'categories',
           localField: 'categoryId',
@@ -378,6 +396,11 @@ module.exports = {
           description: 0,
           isDeleted: 0,
           suppliers: {
+            isDeleted: 0,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+          categories: {
             isDeleted: 0,
             createdAt: 0,
             updatedAt: 0,
