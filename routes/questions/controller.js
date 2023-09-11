@@ -658,7 +658,13 @@ module.exports = {
   question7: async (req, res, next) => {
     try {
       const { status } = req.query;
+      // const conditionFind = {
+      //   $expr: {
+      //     $eq: ['$status', status],
+      //   },
+      // }
 
+      // let results = await Order.find(conditionFind) // ~ match
       let results = await Order.find({ status }) // ~ match
         .populate({ path: 'customer', select: 'firstName lastName' }) // select để chọn lọc dữ liệu trả về
         // .populate('customer')
@@ -750,11 +756,8 @@ module.exports = {
       const conditionFind = {
         $expr: {
           $and: [
-            // { $eq: ['$status', status] },
-            { status },
-            {
-              $eq: [{ $dayOfMonth: '$shippedDate' }, { $dayOfMonth: findDate }],
-            },
+            { status }, // { $eq: ['$status', status] },
+            {$eq: [{ $dayOfMonth: '$shippedDate' }, { $dayOfMonth: findDate }] },
             { $eq: [{ $month: '$shippedDate' }, { $month: findDate }] },
             { $eq: [{ $year: '$shippedDate' }, { $year: findDate }] },
           ],
@@ -877,11 +880,14 @@ module.exports = {
         })
         .unwind('customer')
         .match({
-          'customer.address': {
-            $regex: new RegExp(`${address}`),
-            $options: 'i',
-          },
+          'customer.address': fuzzySearch(address),
         })
+        // .match({
+        //   'customer.address': {
+        //     $regex: new RegExp(`${address}`),
+        //     $options: 'i',
+        //   },
+        // })
         .project({
           customerId: 0,
           employeeId: 0,
