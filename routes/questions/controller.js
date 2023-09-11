@@ -1,5 +1,5 @@
 
-const { getQueryDateTime } = require('../../utils');
+const { getQueryDateTime, fuzzySearch } = require('../../utils');
 const {
   Product,
   Category,
@@ -421,11 +421,84 @@ module.exports = {
     }
   },
 
+  question3f: async (req, res, next) => {
+    try {
+      const s = { $subtract: [100, '$discount'] }; // (100 - 10) s => 90
+      const m = { $multiply: ['$price', s] }; // price * 90
+      const d = { $divide: [m, 100] }; // price * 90 / 100
+
+      // let results = await Product.aggregate([
+      //   { $addFields: { disPrice: d } },
+      //   {
+      //     $match: { $expr: { $lte: ['$disPrice', 1000] } },
+      //   },
+      //   {
+      //     $project: {
+      //       categoryId: 0,
+      //       supplierId: 0,
+      //       description: 0,
+      //     },
+      //   },
+      // ]);
+
+      let results = await Product.aggregate()
+        .addFields({ disPrice: d })
+        .match({ $expr: { $lte: ['$disPrice', 100] } })
+        .lookup({
+          from: 'categories',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'a.b.c.categories',
+        })
+        .unwind('a.b.c.categories')
+        // .addFields({ categories: '$a.b.c.categories' })
+        .project({
+          categories : '$a.b.c.categories',
+        })
+        // .lookup({
+        //   from: 'suppliers',
+        //   localField: 'supplierId',
+        //   foreignField: '_id',
+        //   as: 'suppliers',
+        // })
+        // .unwind('suppliers')
+        // .project({
+        //   categoryId: 0,
+        //   supplierId: 0,
+        //   description: 0,
+        //   isDeleted: 0,
+        //   suppliers: {
+        //     isDeleted: 0,
+        //     createdAt: 0,
+        //     updatedAt: 0,
+        //   },
+        //   categories: {
+        //     isDeleted: 0,
+        //     createdAt: 0,
+        //     updatedAt: 0,
+        //   },
+        // });
+
+      let total = await Product.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log('««««« err »»»»»', err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
   question4: async (req, res, next) => {
     try {
       const { address } = req.query;
 
       const conditionFind = {
+        address: new RegExp(address.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'gi'),
         address: fuzzySearch(address),
       };
       // const conditionFind = { address: new RegExp(`${address}`) };
