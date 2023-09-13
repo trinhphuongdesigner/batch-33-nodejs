@@ -240,6 +240,50 @@ module.exports = {
           status: { $in: ['WAITING'] },
         })
         .unwind('productList')
+        .group({
+          _id: '$productList.productId',
+          quantity: { $sum: '$productList.quantity' },
+        })
+        .lookup({
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product',
+        })
+        .unwind("product")
+        .project({
+          name: '$product.name',
+          price: '$product.price',
+          discount: '$product.discount',
+          stock: '$product.stock',
+          quantity: 1,
+        });
+
+      let total = await Order.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log('««««« err »»»»»', err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
+  question20a: async (req, res, next) => {
+    try {
+      let { fromDate, toDate } = req.query;
+      const conditionFind = getQueryDateTime(fromDate, toDate);
+
+      let results = await Order.aggregate()
+        .match({
+          ...conditionFind,
+          status: { $in: ['WAITING'] },
+        })
+        .unwind('productList')
         .lookup({
           from: 'products',
           localField: 'productList.productId',
