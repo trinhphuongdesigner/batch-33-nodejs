@@ -23,6 +23,9 @@ const {
   question8a,
   question8b,
   question8c,
+} = require('./controller');
+
+const {
   question13,
   question15,
   question16a,
@@ -35,13 +38,16 @@ const {
   question23,
   question24,
   question25,
+} = require('./controller2');
+
+const {
   question26,
   question26b,
   question26c,
   question27,
   question30,
   question34,
-} = require('./controller');
+} = require('./controller3');
 
 router.get('/1', question1);
 router.get('/1a', question1a);

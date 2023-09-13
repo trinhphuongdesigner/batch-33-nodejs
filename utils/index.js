@@ -13,6 +13,35 @@ module.exports = {
     });
   },
 
+  getQueryDateTime: (from, to, type = 'IN') => {
+    fromDate = new Date(from);
+    fromDate.setHours(0, 0, 0, 0);
+
+    const tmpToDate = new Date(to);
+    tmpToDate.setHours(0, 0, 0, 0);
+    toDate = new Date(tmpToDate.setDate(tmpToDate.getDate() + 1));
+
+    let query = {};
+
+    if (type === 'IN') {
+      const compareFromDate = { $gte: ['$createdDate', fromDate] };
+      const compareToDate = { $lt: ['$createdDate', toDate] };
+
+      query = {
+        $expr: { $and: [compareFromDate, compareToDate] },
+      };
+    } else {
+      const compareFromDate = { $lt: ['$createdDate', fromDate] };
+      const compareToDate = { $gt: ['$createdDate', toDate] };
+
+      query = {
+        $expr: { $or: [compareFromDate, compareToDate] },
+      };
+    }
+
+    return query;
+  },
+
   generationID: () => Math.floor(Date.now()),
 
   validateSchema: (schema) => async (req, res, next) => { // thực thi việc xác thực
