@@ -931,7 +931,57 @@ module.exports = {
     }
   },
 
-  question18: async (req, res, next) => {
+  question16a: async (req, res, next) => {
+    try {
+      let results = await Order.find().populate('customer').populate('employee');
+
+      let total = await Order.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log('««««« err »»»»»', err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
+  question16b: async (req, res, next) => {
+    try {
+      let results = await Order.aggregate()
+      .lookup({
+        from: 'customers',
+        localField: 'customerId',
+        foreignField: '_id',
+        as: 'customers',
+      })
+      .unwind('customers')
+      .lookup({
+        from: 'employees',
+        localField: 'employeeId',
+        foreignField: '_id',
+        as: 'employees',
+      })
+      .unwind('employees');
+
+      let total = await Order.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log('««««« err »»»»»', err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
+  question18a: async (req, res, next) => {
     try {
       let results = await Category.aggregate()
         .lookup({
@@ -940,7 +990,7 @@ module.exports = {
           foreignField: 'categoryId',
           as: 'products',
         })
-        // .unwind('products') //   sẽ dẫn dến thiếu dự liệu
+        // .unwind('products') // sẽ dẫn dến thiếu dự liệu trừ trường hợp chắc chắn có 1 hoặc nhiều products
         .unwind({
           path: '$products',
           preserveNullAndEmptyArrays: true,
@@ -952,13 +1002,18 @@ module.exports = {
           totalStock: {
             $sum: '$products.stock',
           },
+          // totalProduct1: {
+          //   $sum: 1,
+          // }
           totalProduct: {
             $sum: {
               $cond: {
                 if: {
-                  $and: [
-                    { $gt: ['$products.stock', 0] },
-                  ]
+                  $gt: ['$products.stock', 0]
+                  // $and: [
+                  //   { $gt: ['$products.stock', 0] },
+                  //   { $lte: ['$products.stock', 100] },
+                  // ]
                 }, then: 1, else: 0
               }
             },
@@ -966,6 +1021,7 @@ module.exports = {
         })
         .sort({
           totalProduct: -1,
+          totalStock: -1,
           name: -1,
         });
 
@@ -982,6 +1038,7 @@ module.exports = {
       return res.status(500).json({ code: 500, error: err });
     }
   },
+
 
   question19: async (req, res, next) => {
     try {
