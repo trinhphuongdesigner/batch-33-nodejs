@@ -588,7 +588,7 @@ module.exports = {
         .lookup({
           from: 'orders',
           localField: '_id',
-          foreignField: 'orderDetails.productId',
+          foreignField: 'productList.productId',
           as: 'orders',
         })
         .match({
@@ -598,7 +598,7 @@ module.exports = {
           name: 1,
           price: 1,
           stock: 1,
-        })
+        });
 
       let total = await Product.countDocuments();
 

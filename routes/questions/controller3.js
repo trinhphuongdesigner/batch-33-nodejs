@@ -9,6 +9,7 @@ const {
 } = require('../../models');
 
 module.exports = {
+  // SAI
   question26: async (req, res, next) => {
     try {
       let { fromDate, toDate } = req.query;
@@ -24,53 +25,53 @@ module.exports = {
           foreignField: 'orderDetails.productId',
           as: 'orders',
         })
-        .unwind({
-          path: '$orders',
-          preserveNullAndEmptyArrays: true,
-        })
-        .match({
-          $or: [
-            {
-              $and: [
-                { orders: { $ne: null } },
-                {
-                  $or: [
-                    { 'orders.createdDate': { $lte: fromDate } },
-                    { 'orders.createdDate': { $gte: toDate } },
-                  ],
-                },
-              ],
-            },
-            {
-              orders: null,
-            },
-          ],
-        })
-        .lookup({
-          from: 'suppliers',
-          localField: 'supplierId',
-          foreignField: '_id',
-          as: 'suppliers',
-        })
-        .project({
-          _id: 0,
-          suppliers: 1,
-        })
-        .unwind('suppliers')
-        .project({
-          _id: '$suppliers._id',
-          name: '$suppliers.name',
-          email: '$suppliers.email',
-          phoneNumber: '$suppliers.phoneNumber',
-          address: '$suppliers.address',
-        })
-        .group({
-          _id: '$_id',
-          name: { $first: '$name' },
-          phoneNumber: { $first: '$phoneNumber' },
-          email: { $first: '$email' },
-          address: { $first: '$address' },
-        })
+        // .unwind({
+        //   path: '$orders',
+        //   preserveNullAndEmptyArrays: true,
+        // })
+        // .match({
+        //   $or: [
+        //     {
+        //       $and: [
+        //         { orders: { $ne: null } },
+        //         {
+        //           $or: [
+        //             { 'orders.createdDate': { $lte: fromDate } },
+        //             { 'orders.createdDate': { $gte: toDate } },
+        //           ],
+        //         },
+        //       ],
+        //     },
+        //     {
+        //       orders: null,
+        //     },
+        //   ],
+        // })
+        // .lookup({
+        //   from: 'suppliers',
+        //   localField: 'supplierId',
+        //   foreignField: '_id',
+        //   as: 'suppliers',
+        // })
+        // .project({
+        //   _id: 0,
+        //   suppliers: 1,
+        // })
+        // .unwind('suppliers')
+        // .project({
+        //   _id: '$suppliers._id',
+        //   name: '$suppliers.name',
+        //   email: '$suppliers.email',
+        //   phoneNumber: '$suppliers.phoneNumber',
+        //   address: '$suppliers.address',
+        // })
+        // .group({
+        //   _id: '$_id',
+        //   name: { $first: '$name' },
+        //   phoneNumber: { $first: '$phoneNumber' },
+        //   email: { $first: '$email' },
+        //   address: { $first: '$address' },
+        // })
 
       let total = await Product.countDocuments();
 
@@ -108,56 +109,38 @@ module.exports = {
         .lookup({
           from: 'orders',
           localField: 'products._id',
-          foreignField: 'orderDetails.productId',
+          foreignField: 'productList.productId',
           as: 'orders',
         })
         .unwind({
           path: '$orders',
           preserveNullAndEmptyArrays: true,
         })
-      // .match({
-      //   $or: [
-      //     {
-      //       $and: [
-      //         { orders: { $ne: null } },
-      //         {
-      //           $or: [
-      //             { 'orders.createdDate': { $lte: fromDate } },
-      //             { 'orders.createdDate': { $gte: toDate } },
-      //           ],
-      //         },
-      //       ],
-      //     },
-      //     {
-      //       orders: null,
-      //     },
-      //   ],
-      // })
-      // .lookup({
-      //   from: 'suppliers',
-      //   localField: 'supplierId',
-      //   foreignField: '_id',
-      //   as: 'suppliers',
-      // })
-      // .project({
-      //   _id: 0,
-      //   suppliers: 1,
-      // })
-      // .unwind('suppliers')
-      // .project({
-      //   _id: '$suppliers._id',
-      //   name: '$suppliers.name',
-      //   email: '$suppliers.email',
-      //   phoneNumber: '$suppliers.phoneNumber',
-      //   address: '$suppliers.address',
-      // })
-      // .group({
-      //   _id: '$_id',
-      //   name: { $first: '$name' },
-      //   phoneNumber: { $first: '$phoneNumber' },
-      //   email: { $first: '$email' },
-      //   address: { $first: '$address' },
-      // })
+        .project({
+          name: 1,
+          orders: 1,
+          // products: 0,
+        })
+      .match({
+        $or: [
+          { orders: null },
+          {
+            $and: [
+              { orders: { $ne: null } },
+              {
+                $or: [
+                  { 'orders.createdDate': { $lte: fromDate } },
+                  { 'orders.createdDate': { $gte: toDate } },
+                ],
+              },
+            ],
+          }
+        ],
+      })
+      .group({
+        _id: '$_id',
+        name: { $first: '$name' },
+      })
 
       let total = await Supplier.countDocuments();
 
