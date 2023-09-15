@@ -5,6 +5,7 @@ const {
   Category,
   Supplier,
   Customer,
+  Employee,
   Order,
 } = require('../../models');
 
@@ -370,24 +371,22 @@ module.exports = {
       let results = await Order.aggregate()
         .match(conditionFind)
         // .unwind({
-        //   path: '$orderDetails',
+        //   path: '$productList',
         //   preserveNullAndEmptyArrays: true,
         // })
-        .unwind('orderDetails')
+        .unwind('productList')
         .addFields({
           total: {
-            $sum: {
-              $divide: [
-                {
-                  $multiply: [
-                    '$orderDetails.price',
-                    { $subtract: [100, '$orderDetails.discount'] },
-                    '$orderDetails.quantity',
-                  ],
-                },
-                100,
-              ],
-            },
+            $divide: [
+              {
+                $multiply: [
+                  '$productList.price',
+                  { $subtract: [100, '$productList.discount'] },
+                  '$productList.quantity',
+                ],
+              },
+              100,
+            ],
           },
         })
         .group({
@@ -411,33 +410,31 @@ module.exports = {
 
   question23: async (req, res, next) => {
     try {
-      let { fromDate, toDate } = req.query;
-      const conditionFind = getQueryDateTime(fromDate, toDate);
+      // let { fromDate, toDate } = req.query;
+      // const conditionFind = getQueryDateTime(fromDate, toDate);
 
       let results = await Order.aggregate()
-        .match(conditionFind)
+        // .match(conditionFind)
         .unwind({
-          path: '$orderDetails',
+          path: '$productList',
           preserveNullAndEmptyArrays: true,
         })
         .addFields({
           total: {
-            $sum: {
-              $divide: [
-                {
-                  $multiply: [
-                    '$orderDetails.price',
-                    { $subtract: [100, '$orderDetails.discount'] },
-                    '$orderDetails.quantity',
-                  ],
-                },
-                100,
-              ],
-            },
+            $divide: [
+              {
+                $multiply: [
+                  '$productList.price',
+                  { $subtract: [100, '$productList.discount'] },
+                  '$productList.quantity',
+                ],
+              },
+              100,
+            ],
           },
         })
         .group({
-          _id: null,
+          _id: "$_id",
           total: { $sum: '$total' },
         });
 
@@ -456,6 +453,75 @@ module.exports = {
   },
 
   question24: async (req, res, next) => {
+    try {
+      // let { fromDate, toDate } = req.query;
+      // const conditionFind = getQueryDateTime(fromDate, toDate);
+
+      let results = await Employee.aggregate()
+        // .match(conditionFind)
+        .lookup({
+          from: 'orders',
+          localField: '_id',
+          foreignField: 'employeeId',
+          as: 'orders',
+        })
+        // .unwind('orders')
+        .unwind({
+          path: '$orders',
+          preserveNullAndEmptyArrays: true,
+        })
+        // .unwind('orders.productList')
+        .unwind({
+          path: '$orders.productList',
+          preserveNullAndEmptyArrays: true,
+        })
+        .addFields({
+          "total": {
+            $divide: [
+              {
+                $multiply: [
+                  '$orders.productList.price',
+                  { $subtract: [100, '$orders.productList.discount'] },
+                  '$orders.productList.quantity',
+                ],
+              },
+              100,
+            ],
+          },
+        })
+        .group({
+          _id: '$_id',
+          firstName: { $first: '$firstName'},
+          lastName: { $first: '$lastName'},
+          phoneNumber: { $first: '$phoneNumber'},
+          email: { $first: '$email'},
+          total: { $sum: '$total' },
+        })
+        // .project({
+        //   totalPrice: '$total',
+        //   firstName: '$employee.firstName',
+        //   lastName: '$employee.lastName',
+        //   phoneNumber: '$employee.phoneNumber',
+        //   address: '$employee.address',
+        //   email: '$employee.email ',
+        // })
+
+      let total = await Order.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log('««««« err »»»»»', err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
+  // SAI
+  question24a: async (req, res, next) => {
     try {
       // let { fromDate, toDate } = req.query;
       // const conditionFind = getQueryDateTime(fromDate, toDate);
