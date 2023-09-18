@@ -9,7 +9,8 @@ const { Customer } = require('../models');
 const passportVerifyToken = new JwtStrategy(
   {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken('Authorization'),
-    secretOrKey: jwtSettings.SECRET,
+    // secretOrKey: jwtSettings.SECRET,
+    secretOrKey: "ADB57C459465E3ED43C6C6231E3C9",
   },
   async (payload, done) => {
     try {

@@ -3,27 +3,19 @@ const JWT = require('jsonwebtoken');
 const jwtSettings = require('../constants/jwtSetting');
 
 const generateToken = (user) => {
-  // _id,
-  // firstName,
-  // lastName,
-  // phoneNumber,
-  // address,
-  // email,
-  // birthday,
-  // updatedAt,
   const expiresIn = '24h';
   const algorithm = 'HS256'; 
 
   return JWT.sign(
     {
       iat: Math.floor(Date.now() / 1000),
+      ...user,
       // email: user.email,
       // name: user.firstName,
-      ...user,
       // algorithm,
     },
     // jwtSettings.SECRET,
-    "ANH_YEU_EM",
+    "ADB57C459465E3ED43C6C6231E3C9",
     {
       expiresIn,
     },
