@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
 const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
-// const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 
 const employeeSchema = new Schema(
   {
@@ -70,28 +70,28 @@ employeeSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// employeeSchema.pre('save', async function (next) {
-//   try {
-//     // generate salt key
-//     const salt = await bcrypt.genSalt(10); // 10 ký tự ABCDEFGHIK + 123456
-//     // generate password = salt key + hash key
-//     const hashPass = await bcrypt.hash(this.password, salt);
-//     // override password
-//     this.password = hashPass;
+employeeSchema.pre('save', async function (next) {
+  try {
+    // generate salt key
+    const salt = await bcrypt.genSalt(10); // 10 ký tự ABCDEFGHIK + 123456
+    // generate password = salt key + hash key
+    const hashPass = await bcrypt.hash(this.password, salt);
+    // override password
+    this.password = hashPass;
 
-//     next();
-//   } catch (err) {
-//     next(err);
-//   }
-// });
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
-// employeeSchema.methods.isValidPass = async function(password) {
-//   try {
-//     return await bcrypt.compare(password, this.password);
-//   } catch (err) {
-//     throw new Error(err);
-//   }
-// };
+employeeSchema.methods.isValidPass = async function(password) {
+  try {
+    return await bcrypt.compare(password, this.password);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
 
 // Config
 employeeSchema.set('toJSON', { virtuals: true });
