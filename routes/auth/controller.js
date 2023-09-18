@@ -27,11 +27,11 @@ module.exports = {
           birthday,
           updatedAt,
         });
-      // const refreshToken = generateRefreshToken(_id);
+      const refreshToken = generateRefreshToken(_id);
 
       return res.status(200).json({
         token,
-        // refreshToken,
+        refreshToken,
       });
     } catch (err) {
       console.log('««««« err »»»»»', err);
@@ -43,13 +43,13 @@ module.exports = {
     try {
       const { refreshToken } = req.body;
 
-      JWT.verify(refreshToken, jwtSettings.SECRET, async (err, data) => {
+      JWT.verify(refreshToken, jwtSettings.SECRET, async (err, payload) => {
         if (err) {
           return res.status(401).json({
             message: 'refreshToken is invalid',
           });
         } else {
-          const { id } = data;
+          const { id } = payload;
 
           const customer = await Customer.findOne({
             _id: id,
