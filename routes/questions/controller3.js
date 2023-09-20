@@ -292,6 +292,111 @@ module.exports = {
     try {
       let results = await Category.aggregate()
         .lookup({
+          from: "products",
+          localField: "_id",
+          foreignField: "categoryId",
+          as: "products",
+        })
+        .project({
+          description: 0,
+          isDeleted: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          products: {
+            categoryId: 0,
+            supplierId: 0,
+            description: 0,
+            isDeleted: 0,
+            stock: 0,
+            price: 0,
+            discount: 0,
+          }
+        })
+        .unwind({
+          path: "$products",
+          preserveNullAndEmptyArrays: true,
+        })
+        .lookup({
+          from: "orders",
+          localField: "products._id",
+          foreignField: "productList.productId",
+          as: "orders",
+        })
+        .project({
+          orders: {
+            paymentType: 0,
+            status: 0,
+            createdDate: 0,
+            createdAt: 0,
+            updatedAt: 0,
+            employeeId: 0,
+            customerId: 0,
+          }
+        })
+        .unwind({
+          path: "$orders",
+          preserveNullAndEmptyArrays: true,
+        })
+        .unwind({
+          path: "$orders.productList",
+          preserveNullAndEmptyArrays: true,
+        })
+        .match({ // Lọc các sản phẩm trùng nhau
+          $or: [
+            {
+              $expr: {
+                $eq: ["$products._id", "$orders.productList.productId"],
+              },
+            },
+            {
+              orders: { $exists: false },
+            },
+          ],
+        })
+        .addFields({
+          intoMoney: {
+            $multiply: [
+              "$orders.productList.price",
+              "$orders.productList.quantity",
+              {
+                $divide: [
+                  { $subtract: [100, "$orders.productList.discount"] },
+                  100,
+                ],
+              },
+            ],
+          },
+        })
+        .project({
+          orders: 0,
+        })
+        .group({
+          _id: "$_id",
+          name: { $first: "$name" },
+          totalAmount: { $sum: "$intoMoney" },
+        })
+        .sort({
+          name: 1,
+        })
+
+      let total = await Category.countDocuments();
+
+      return res.send({
+        code: 200,
+        total,
+        totalResult: results.length,
+        payload: results,
+      });
+    } catch (err) {
+      console.log("««««« err »»»»»", err);
+      return res.status(500).json({ code: 500, error: err });
+    }
+  },
+
+  question30a: async (req, res, next) => {
+    try {
+      let results = await Category.aggregate()
+        .lookup({
           from: 'products',
           localField: '_id',
           foreignField: 'categoryId',
@@ -330,7 +435,7 @@ module.exports = {
           },
         })
       // .group({
-      //   _id: "$orders.productList._id", 
+      //   _id: "$orders.productList._id",
       //   price: { $first: "$price" },
       // })
       // .group({
