@@ -45,7 +45,7 @@ passport.use(passportConfigBasic);
 
 // app.use('/products', passport.authenticate('jwt', { session: false }), productRouter);
 app.use('/auth', authRouter);
-app.use('/products', passport.authenticate('jwt', { session: false }), productsRouter);
+app.use('/products', productsRouter);
 app.use('/categories', passport.authenticate('jwt', { session: false }), categoriesRouter);
 // passport.authenticate('local', { session: false }
 app.use('/suppliers', suppliersRouter);

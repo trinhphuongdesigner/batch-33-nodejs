@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const passport = require('passport');
 
 const { validateSchema, checkIdSchema } = require('../../utils')
 
@@ -11,21 +12,17 @@ router.route('/all')
 
 router.route('/')
   .get(getList)
-  .post(validateSchema(validationSchema), create)
+  .post(passport.authenticate('jwt', { session: false }), validateSchema(validationSchema), create)
 
 router.route('/fake')
   .post(fake)
-
-router.route('/')
-  .get(getList)
-  .post(validateSchema(validationSchema), create)
 
 router.get('/search', validateSchema(validationQuerySchema), search);
 
 router.route('/:id')
   .get(validateSchema(checkIdSchema), getDetail)
-  .put(validateSchema(checkIdSchema), validateSchema(validationSchema), update)
+  .put(passport.authenticate('jwt', { session: false }), validateSchema(checkIdSchema), validateSchema(validationSchema), update)
 
-router.patch('/delete/:id', softDelete);
+router.patch('/delete/:id', passport.authenticate('jwt', { session: false }), softDelete);
 
 module.exports = router;
